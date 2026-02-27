@@ -1,5 +1,6 @@
 import os
 import subprocess
+import numpy as np
 import mlflow
 import mlflow.xgboost
 import pandas as pd
@@ -15,39 +16,55 @@ dagshub.init(repo_owner="BradleyJason", repo_name="airbnb-price-predictor", mlfl
 
 def load_features(path: str):
     df = pd.read_csv(path)
-    # TODO: update target column name to match dataset
+
+    # Cap outliers at the 99th percentile
+    price_cap = df["price"].quantile(0.99)
+    df = df[df["price"] <= price_cap]
+
     X = df.drop(columns=["price"])
     y = df["price"]
-    return X, y
+    return X, y, price_cap
 
 
 def train(data_path: str = "data/processed/listings_clean.csv"):
-    X, y = load_features(data_path)
+    X, y, price_cap = load_features(data_path)
+
+    # Log-transform the target
+    y = np.log1p(y)
+
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
 
     params = {
-        "n_estimators": 200,
+        "n_estimators": 500,
         "max_depth": 6,
-        "learning_rate": 0.1,
+        "learning_rate": 0.05,
         "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "min_child_weight": 3,
     }
 
     mlflow.set_experiment("airbnb-price-predictor")
 
     with mlflow.start_run():
         mlflow.log_params(params)
+        mlflow.log_param("log_transform", True)
 
         model = XGBRegressor(**params, random_state=42)
         model.fit(X_train, y_train)
 
+        # Predict in log space, inverse-transform for real-scale metrics
         preds = model.predict(X_test)
-        mae = mean_absolute_error(y_test, preds)
-        r2 = r2_score(y_test, preds)
+        preds_real = np.expm1(preds)
+        y_test_real = np.expm1(y_test)
+
+        mae = mean_absolute_error(y_test_real, preds_real)
+        r2 = r2_score(y_test_real, preds_real)
 
         mlflow.log_metric("mae", mae)
         mlflow.log_metric("r2", r2)
+        mlflow.log_metric("price_cap", price_cap)
 
         git_commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
         mlflow.set_tag("git_commit", git_commit)
@@ -61,7 +78,7 @@ def train(data_path: str = "data/processed/listings_clean.csv"):
             registered_model_name="airbnb-price-predictor",
         )
 
-        print(f"MAE: {mae:.2f} | R2: {r2:.4f}")
+        print(f"MAE: {mae:.2f}€ | R2: {r2:.4f} | price_cap: {price_cap:.0f}€")
 
     return model
 
