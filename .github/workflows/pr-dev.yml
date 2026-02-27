@@ -1,0 +1,54 @@
+name: PR → dev
+
+on:
+  pull_request:
+    branches:
+      - dev
+
+env:
+  DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+  DAGSHUB_TOKEN:    ${{ secrets.DAGSHUB_TOKEN }}
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+
+jobs:
+  test-and-build:
+    name: Lint, Test, Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          pip install pytest-cov
+
+      - name: Run unit & integration tests with coverage
+        run: |
+          pytest tests/unit/ tests/integration/ \
+            --tb=short \
+            --cov=src \
+            --cov=api \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            -v
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+      - name: Build Docker image (smoke check — no push)
+        run: |
+          docker build -t airbnb-price-predictor:test .
+          echo "Docker build succeeded"

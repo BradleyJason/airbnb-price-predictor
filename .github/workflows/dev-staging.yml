@@ -1,0 +1,119 @@
+name: dev → staging
+
+on:
+  push:
+    branches:
+      - staging
+
+env:
+  DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+  DAGSHUB_TOKEN:    ${{ secrets.DAGSHUB_TOKEN }}
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+
+jobs:
+  full-test-suite:
+    name: Full Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          pip install pytest-cov
+
+      - name: Run full test suite (unit + integration + e2e)
+        run: |
+          pytest tests/ \
+            --tb=short \
+            --cov=src \
+            --cov=api \
+            --cov-report=term-missing \
+            -v
+
+  mlflow-quality-gates:
+    name: MLflow Quality Gates → promote to Staging
+    runs-on: ubuntu-latest
+    needs: full-test-suite
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check quality gates and promote to Staging
+        run: |
+          python - <<'EOF'
+          import sys
+          import dagshub
+          import mlflow
+          from mlflow.tracking import MlflowClient
+
+          dagshub.init(
+              repo_owner="BradleyJason",
+              repo_name="airbnb-price-predictor",
+              mlflow=True,
+          )
+
+          client = MlflowClient()
+          model_name = "airbnb-price-predictor"
+
+          # ── Find latest candidate (stage == "None") ──────────────────────
+          versions = client.search_model_versions(f"name='{model_name}'")
+          candidates = [v for v in versions if v.current_stage == "None"]
+
+          if not candidates:
+              print("ERROR: No candidate model found in the registry.")
+              sys.exit(1)
+
+          latest = sorted(candidates, key=lambda v: int(v.version))[-1]
+          run_id = latest.run_id
+
+          # ── Fetch metrics from the training run ───────────────────────────
+          run = client.get_run(run_id)
+          r2  = run.data.metrics.get("r2",  0.0)
+          mae = run.data.metrics.get("mae", float("inf"))
+
+          print(f"Candidate model  : v{latest.version} (run {run_id[:8]})")
+          print(f"  R²              : {r2:.4f}  (threshold > 0.45)")
+          print(f"  MAE             : {mae:.2f}€  (threshold < 80)")
+
+          # ── Quality gates ─────────────────────────────────────────────────
+          gates_ok = r2 > 0.45 and mae < 80
+
+          if gates_ok:
+              client.transition_model_version_stage(
+                  name=model_name,
+                  version=latest.version,
+                  stage="Staging",
+                  archive_existing_versions=True,
+              )
+              print(f"Quality gates PASSED — v{latest.version} promoted to Staging.")
+          else:
+              print("Quality gates FAILED:")
+              if r2 <= 0.45:
+                  print(f"  R² = {r2:.4f} is below the 0.45 threshold.")
+              if mae >= 80:
+                  print(f"  MAE = {mae:.2f}€ is above the 80€ threshold.")
+              sys.exit(1)
+          EOF
