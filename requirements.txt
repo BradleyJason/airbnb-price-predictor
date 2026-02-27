@@ -9,4 +9,5 @@ numpy
 python-dotenv
 dagshub
 pytest
+pytest-asyncio
 httpx
