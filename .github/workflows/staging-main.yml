@@ -34,15 +34,15 @@ jobs:
       - name: Verify Staging model exists
         run: |
           python - <<'EOF'
+          import os
           import sys
-          import dagshub
+          import mlflow
           from mlflow.tracking import MlflowClient
 
-          dagshub.init(
-              repo_owner="BradleyJason",
-              repo_name="airbnb-price-predictor",
-              mlflow=True,
-          )
+          # Auth via env vars — no interactive OAuth
+          os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ["DAGSHUB_USERNAME"]
+          os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ["DAGSHUB_TOKEN"]
+          mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
 
           client = MlflowClient()
           model_name = "airbnb-price-predictor"
@@ -69,15 +69,15 @@ jobs:
       - name: Promote Staging → Production
         run: |
           python - <<'EOF'
+          import os
           import sys
-          import dagshub
+          import mlflow
           from mlflow.tracking import MlflowClient
 
-          dagshub.init(
-              repo_owner="BradleyJason",
-              repo_name="airbnb-price-predictor",
-              mlflow=True,
-          )
+          # Auth via env vars — no interactive OAuth
+          os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ["DAGSHUB_USERNAME"]
+          os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ["DAGSHUB_TOKEN"]
+          mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
 
           client = MlflowClient()
           model_name = "airbnb-price-predictor"
