@@ -37,7 +37,6 @@ async def test_predict_endpoint_structure():
     fake_model.predict.return_value = np.array([np.log1p(150.0)])
 
     with patch("src.predict.mlflow.xgboost.load_model", return_value=fake_model), \
-         patch("dagshub.init"), \
          patch("dotenv.load_dotenv"):
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -63,7 +62,6 @@ async def test_predict_endpoint_bad_payload():
 async def test_predict_endpoint_model_error_returns_500():
     """If the model raises, the API must return 500 with detail."""
     with patch("src.predict.mlflow.xgboost.load_model", side_effect=RuntimeError("model not found")), \
-         patch("dagshub.init"), \
          patch("dotenv.load_dotenv"):
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

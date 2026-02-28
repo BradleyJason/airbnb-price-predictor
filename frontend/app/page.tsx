@@ -302,7 +302,7 @@ export default function Home() {
                       ))}
                     </select>
                     <p className="text-[10px] text-white/25 mt-1.5 pl-0.5">
-                      Paris intra-muros · 20 arrondissements
+                      Paris city limits · 20 districts
                     </p>
                   </div>
                 </div>
