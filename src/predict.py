@@ -7,8 +7,9 @@ def load_model(model_uri: str):
     import os
     from dotenv import load_dotenv
     load_dotenv()
-    import dagshub
-    dagshub.init(repo_owner="BradleyJason", repo_name="airbnb-price-predictor", mlflow=True)
+    os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ.get("DAGSHUB_USERNAME", "")
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ.get("DAGSHUB_TOKEN", "")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", ""))
     return mlflow.xgboost.load_model(model_uri)
 
 
