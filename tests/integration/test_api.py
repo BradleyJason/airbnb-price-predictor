@@ -8,9 +8,15 @@ from api.main import app
 
 # ── Shared valid payload ──────────────────────────────────────────────────────
 VALID_PAYLOAD = {
+    "room_type": 0,
+    "neighbourhood_cleansed": 7,
     "accommodates": 2,
     "bedrooms": 1,
     "bathrooms": 1.0,
+    "number_of_reviews": 20,
+    "review_scores_rating": 4.5,
+    "availability_365": 120,
+    "minimum_nights": 2,
 }
 
 
@@ -48,7 +54,7 @@ async def test_predict_endpoint_structure():
 async def test_predict_endpoint_bad_payload():
     """Missing required fields → 422 Unprocessable Entity."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post("/predict", json={"accommodates": 2})
+        response = await client.post("/predict", json={"accommodates": 2})  # missing 8 required fields
 
     assert response.status_code == 422
 

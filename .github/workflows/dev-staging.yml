@@ -42,7 +42,7 @@ jobs:
             -v
 
   mlflow-quality-gates:
-    name: MLflow Quality Gates → promote to Staging
+    name: MLflow Quality Gates → assign candidate alias
     runs-on: ubuntu-latest
     needs: full-test-suite
 
@@ -61,7 +61,7 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Check quality gates and promote to Staging
+      - name: Check quality gates and assign candidate alias
         run: |
           python - <<'EOF'
           import os
@@ -77,15 +77,13 @@ jobs:
           client = MlflowClient()
           model_name = "airbnb-price-predictor"
 
-          # ── Find latest candidate (stage == "None") ──────────────────────
+          # ── Find latest registered version ────────────────────────────────
           versions = client.search_model_versions(f"name='{model_name}'")
-          candidates = [v for v in versions if v.current_stage == "None"]
-
-          if not candidates:
-              print("ERROR: No candidate model found in the registry.")
+          if not versions:
+              print("ERROR: No model versions found in the registry.")
               sys.exit(1)
 
-          latest = sorted(candidates, key=lambda v: int(v.version))[-1]
+          latest = sorted(versions, key=lambda v: int(v.version))[-1]
           run_id = latest.run_id
 
           # ── Fetch metrics from the training run ───────────────────────────
@@ -93,26 +91,25 @@ jobs:
           r2  = run.data.metrics.get("r2",  0.0)
           mae = run.data.metrics.get("mae", float("inf"))
 
-          print(f"Candidate model  : v{latest.version} (run {run_id[:8]})")
+          print(f"Latest model     : v{latest.version} (run {run_id[:8]})")
           print(f"  R²              : {r2:.4f}  (threshold > 0.45)")
-          print(f"  MAE             : {mae:.2f}€  (threshold < 80)")
+          print(f"  MAE             : {mae:.2f}e  (threshold < 80)")
 
           # ── Quality gates ─────────────────────────────────────────────────
           gates_ok = r2 > 0.45 and mae < 80
 
           if gates_ok:
-              client.transition_model_version_stage(
+              client.set_registered_model_alias(
                   name=model_name,
+                  alias="candidate",
                   version=latest.version,
-                  stage="Staging",
-                  archive_existing_versions=True,
               )
-              print(f"Quality gates PASSED — v{latest.version} promoted to Staging.")
+              print(f"Quality gates PASSED — v{latest.version} tagged as 'candidate'.")
           else:
               print("Quality gates FAILED:")
               if r2 <= 0.45:
-                  print(f"  R² = {r2:.4f} is below the 0.45 threshold.")
+                  print(f"  R2 = {r2:.4f} is below the 0.45 threshold.")
               if mae >= 80:
-                  print(f"  MAE = {mae:.2f}€ is above the 80€ threshold.")
+                  print(f"  MAE = {mae:.2f}e is above the 80e threshold.")
               sys.exit(1)
           EOF

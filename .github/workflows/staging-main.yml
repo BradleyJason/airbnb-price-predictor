@@ -12,7 +12,7 @@ env:
 
 jobs:
   promote-to-production:
-    name: Promote Staging model → Production
+    name: Promote candidate → champion
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +31,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
 
-      - name: Verify Staging model exists
+      - name: Verify candidate alias exists
         run: |
           python - <<'EOF'
           import os
@@ -47,26 +47,24 @@ jobs:
           client = MlflowClient()
           model_name = "airbnb-price-predictor"
 
-          versions = client.search_model_versions(f"name='{model_name}'")
-          staging  = [v for v in versions if v.current_stage == "Staging"]
-
-          if not staging:
-              print("ERROR: No model found at stage 'Staging'.")
-              print("Run the dev → staging pipeline first.")
+          try:
+              candidate = client.get_model_version_by_alias(model_name, "candidate")
+          except Exception:
+              print("ERROR: No model found with alias 'candidate'.")
+              print("Run the dev -> staging pipeline first.")
               sys.exit(1)
 
-          latest = sorted(staging, key=lambda v: int(v.version))[-1]
-          run    = client.get_run(latest.run_id)
-          r2     = run.data.metrics.get("r2",  "N/A")
-          mae    = run.data.metrics.get("mae", "N/A")
+          run = client.get_run(candidate.run_id)
+          r2  = run.data.metrics.get("r2",  "N/A")
+          mae = run.data.metrics.get("mae", "N/A")
 
-          print(f"Staging model found : v{latest.version} (run {latest.run_id[:8]})")
-          print(f"  R²  : {r2}")
+          print(f"Candidate model found : v{candidate.version} (run {candidate.run_id[:8]})")
+          print(f"  R2  : {r2}")
           print(f"  MAE : {mae}")
-          print("Staging model verified — ready for promotion.")
+          print("Candidate model verified — ready for promotion.")
           EOF
 
-      - name: Promote Staging → Production
+      - name: Assign champion alias
         run: |
           python - <<'EOF'
           import os
@@ -82,17 +80,13 @@ jobs:
           client = MlflowClient()
           model_name = "airbnb-price-predictor"
 
-          versions = client.search_model_versions(f"name='{model_name}'")
-          staging  = [v for v in versions if v.current_stage == "Staging"]
-          latest   = sorted(staging, key=lambda v: int(v.version))[-1]
-
-          client.transition_model_version_stage(
+          candidate = client.get_model_version_by_alias(model_name, "candidate")
+          client.set_registered_model_alias(
               name=model_name,
-              version=latest.version,
-              stage="Production",
-              archive_existing_versions=True,
+              alias="champion",
+              version=candidate.version,
           )
-          print(f"v{latest.version} promoted to Production.")
+          print(f"v{candidate.version} is now 'champion'.")
           EOF
 
   e2e-smoke-tests:

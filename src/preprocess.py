@@ -114,6 +114,14 @@ def preprocess(
     df = fill_missing(df)
     df = encode_categoricals(df)
 
+    # Enforce stable column order so the saved CSV always matches FEATURE_ORDER in predict.py
+    FINAL_COLUMNS = [
+        "room_type", "neighbourhood_cleansed", "accommodates",
+        "bedrooms", "bathrooms", "number_of_reviews",
+        "review_scores_rating", "availability_365", "minimum_nights",
+        "price",
+    ]
+    df = df[FINAL_COLUMNS]
     df.to_csv(output_path, index=False)
     print(f"\nSaved cleaned data to {output_path}")
     print(f"  Final shape: {df.shape}")

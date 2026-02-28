@@ -1,4 +1,5 @@
 import mlflow.xgboost
+import numpy as np
 import pandas as pd
 
 
@@ -11,19 +12,32 @@ def load_model(model_uri: str):
     return mlflow.xgboost.load_model(model_uri)
 
 
-def predict(features: dict, model_uri: str = "models:/airbnb-price-predictor/Production"):
+FEATURE_ORDER = [
+    "room_type", "neighbourhood_cleansed", "accommodates",
+    "bedrooms", "bathrooms", "number_of_reviews",
+    "review_scores_rating", "availability_365", "minimum_nights",
+]
+
+
+def predict(features: dict, model_uri: str = "models:/airbnb-price-predictor@champion"):
     model = load_model(model_uri)
-    df = pd.DataFrame([features])
-    prediction = model.predict(df)
-    return float(prediction[0])
+    df = pd.DataFrame([features])[FEATURE_ORDER]
+    log_prediction = model.predict(df)
+    # Model was trained on log1p(price) — apply inverse transform
+    return float(np.expm1(log_prediction[0]))
 
 
 if __name__ == "__main__":
     sample = {
-        # TODO: fill with real feature names and sample values
+        "room_type": 0,
+        "neighbourhood_cleansed": 7,
         "accommodates": 2,
         "bedrooms": 1,
-        "bathrooms": 1,
+        "bathrooms": 1.0,
+        "number_of_reviews": 20,
+        "review_scores_rating": 4.5,
+        "availability_365": 120,
+        "minimum_nights": 2,
     }
     price = predict(sample)
     print(f"Predicted price: €{price:.2f}")
