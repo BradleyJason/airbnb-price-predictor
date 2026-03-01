@@ -25,7 +25,7 @@ const ROOM_TYPES = [
 ];
 
 // Displayed in arrondissement order (1er → 20e) for UX.
-// Each `value` is the sklearn LabelEncoder code (alphabetical order) — sent to the API.
+// Each `value` is the sklearn LabelEncoder code (alphabetical order) - sent to the API.
 const NEIGHBOURHOODS = [
   { label: "Louvre (1er)",             value: 7,  avg: 125 },
   { label: "Bourse (2e)",              value: 1,  avg: 115 },
@@ -528,7 +528,7 @@ export default function Home() {
                     />
                   </div>
 
-                  {/* Point estimate dot — outside overflow-hidden so it's fully visible */}
+                  {/* Point estimate dot - outside overflow-hidden so it's fully visible */}
                   <motion.div
                     initial={{ left: "0%" }}
                     animate={{ left: `calc(${pricePct}% - 6px)` }}

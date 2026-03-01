@@ -1,4 +1,4 @@
-# EstimAir 🏠
+# EstimAir
 
 > AI-powered Airbnb price estimator for Paris
 
@@ -13,7 +13,7 @@
 
 ---
 
-## 🌐 Live Demo
+## Live Demo
 
 | Service | URL |
 |---|---|
@@ -24,11 +24,11 @@
 
 ---
 
-## 📋 Project Overview
+## Project Overview
 
 **EstimAir** is an end-to-end MLOps project that predicts the nightly price of an Airbnb listing in Paris using a machine learning model. It covers the full production ML lifecycle: data versioning, preprocessing, model training, experiment tracking, automated quality gates, and deployment.
 
-**Dataset**: [Inside Airbnb — Paris](http://insideairbnb.com/get-the-data/) (March 2025)
+**Dataset**: [Inside Airbnb - Paris](http://insideairbnb.com/get-the-data/) (March 2025)
 - 86,064 raw listings · 79 columns
 - 55,655 listings after cleaning · 9 features
 
@@ -36,7 +36,7 @@
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
                           ┌─────────────────────────────────────────┐
@@ -69,7 +69,7 @@
 
 ---
 
-## 📊 Model Performance
+##  Model Performance
 
 | Metric | Value |
 |---|---|
@@ -96,7 +96,7 @@
 
 ---
 
-## 🔄 MLOps Pipeline
+## MLOps Pipeline
 
 ```
   Raw Data (DVC)
@@ -123,15 +123,15 @@
                                FastAPI /predict
 ```
 
-**Model aliases** (MLflow 3.x — stages deprecated):
-- `candidate` — passed quality gates, awaiting promotion
-- `champion` — live in production
+**Model aliases** (MLflow 3.x - stages deprecated):
+- `candidate` - passed quality gates, awaiting promotion
+- `champion` - live in production
 
 ---
 
-## 🧪 Tests
+## Tests
 
-**27 tests — all passing**
+**27 tests - all passing**
 
 | Suite | Count | What it covers |
 |---|---|---|
@@ -147,27 +147,27 @@ pytest tests/ -v --cov=src --cov=api        # with coverage
 
 ---
 
-## 🚀 CI/CD Pipelines
+##  CI/CD Pipelines
 
 Three GitHub Actions workflows trigger automatically:
 
-### 1. `pr-dev.yml` — Pull Request to `dev`
+### 1. `pr-dev.yml` - Pull Request to `dev`
 - Run unit + integration tests
 - Build Docker image (smoke test)
 
-### 2. `dev-staging.yml` — Push to `staging`
+### 2. `dev-staging.yml` - Push to `staging`
 - Run full test suite (unit + integration + e2e) with coverage
 - **Quality gates**: R² > 0.45 AND MAE < 80€
 - If gates pass → assign `candidate` alias in MLflow Registry
 
-### 3. `staging-main.yml` — Push to `main`
+### 3. `staging-main.yml` - Push to `main`
 - Verify `candidate` alias exists
 - Promote `candidate` → `champion`
 - Run e2e smoke tests on champion model
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -183,7 +183,7 @@ Three GitHub Actions workflows trigger automatically:
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 airbnb-price-predictor/
@@ -227,7 +227,7 @@ airbnb-price-predictor/
 
 ---
 
-## 🏃 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Python 3.11
@@ -293,7 +293,7 @@ docker run -p 8000:8000 --env-file .env airbnb-price-predictor
 
 ---
 
-## 🔑 Environment Variables
+##  Environment Variables
 
 ### Backend (`.env` at root)
 
@@ -318,7 +318,7 @@ Add under `Settings → Secrets → Actions`:
 
 ---
 
-## 📈 12-Factor App Compliance
+##  12-Factor App Compliance
 
 | # | Factor | Implementation |
 |---|---|---|

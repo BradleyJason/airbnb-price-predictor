@@ -1,4 +1,4 @@
-"""Integration tests for api/main.py — MLflow/DagsHub are fully mocked."""
+"""Integration tests for api/main.py - MLflow/DagsHub are fully mocked."""
 from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
@@ -31,7 +31,7 @@ async def test_health_endpoint():
 
 @pytest.mark.asyncio
 async def test_predict_endpoint_structure():
-    """POST /predict with a mocked model — verifies response shape and type."""
+    """POST /predict with a mocked model - verifies response shape and type."""
     fake_model = MagicMock()
     # Model trained on log(price): return log(150) so expm1 gives ~149€
     fake_model.predict.return_value = np.array([np.log1p(150.0)])

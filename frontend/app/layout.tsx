@@ -8,7 +8,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "EstimAir — AI Airbnb Price Estimator",
+  title: "EstimAir - AI Airbnb Price Estimator",
   description:
     "Estimate your Airbnb nightly price in Paris with an XGBoost model tracked by MLflow.",
 };

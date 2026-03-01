@@ -1,143 +1,108 @@
-# EstimAir — Airbnb Price Predictor
+# EstimAir - Airbnb Price Predictor
 
 MLOps project predicting Airbnb nightly prices in Paris.
-Stack: XGBoost · MLflow · DVC · DagsHub · FastAPI · Next.js · pytest · GitHub Actions · Docker.
-Dataset: Inside Airbnb Paris (`data/raw/listings.csv`, 86 064 listings → 55 655 après preprocessing).
+Stack: XGBoost - MLflow - DVC - DagsHub - FastAPI - Next.js - pytest - GitHub Actions - Docker.
+Dataset: Inside Airbnb Paris (data/raw/listings.csv, 86 064 listings, 55 655 after preprocessing).
 
 ---
 
-## Stack technique
+## Tech Stack
 
-| Layer               | Technology                                    |
-|---------------------|-----------------------------------------------|
-| Model               | XGBoost — R²=0.51, MAE=69€                   |
-| Experiment tracking | MLflow → DagsHub                              |
-| Data versioning     | DVC → DagsHub remote                          |
-| Backend API         | FastAPI + Uvicorn · port 8000                 |
-| Frontend            | Next.js 16 + Tailwind CSS + framer-motion · port 3000 |
-| Tests               | pytest + pytest-asyncio + httpx               |
-| CI/CD               | GitHub Actions (3 pipelines)                  |
-| Containerisation    | Docker                                        |
-| Dataset             | Inside Airbnb Paris                           |
+| Layer               | Technology                                           |
+|---------------------|------------------------------------------------------|
+| Model               | XGBoost - R2=0.51, MAE=69 EUR                        |
+| Experiment tracking | MLflow 3.x -> DagsHub                                |
+| Data versioning     | DVC -> DagsHub remote                                |
+| Backend API         | FastAPI + Uvicorn, port 8000                         |
+| Frontend            | Next.js 16 + Tailwind CSS + framer-motion, port 3000 |
+| Tests               | pytest + pytest-asyncio + httpx                      |
+| CI/CD               | GitHub Actions (3 pipelines)                         |
+| Containerisation    | Docker                                               |
+| Dataset             | Inside Airbnb Paris                                  |
 
 ---
 
-## Liens importants
+## Important Links
 
-| Ressource | URL |
-|---|---|
-| DagsHub repo | `BradleyJason/airbnb-price-predictor` |
-| MLflow Registry | `models:/airbnb-price-predictor@champion` |
-| Backend (Render) | à configurer |
-| Frontend (Vercel) | à configurer |
+| Resource         | URL                                                    |
+|------------------|--------------------------------------------------------|
+| DagsHub repo     | BradleyJason/airbnb-price-predictor                    |
+| MLflow Registry  | models:/airbnb-price-predictor@champion                |
+| Backend (Render) | https://estimair-backend.onrender.com                  |
+| Frontend         | https://estimair-frontend.onrender.com                 |
 
 ---
 
 ## Project Structure
 
-```
-airbnb-price-predictor/
-├── data/
-│   ├── raw/
-│   │   ├── listings.csv          # Raw dataset (DVC tracked, git-ignored)
-│   │   └── listings.csv.dvc      # DVC pointer → remote DagsHub
-│   └── processed/
-│       └── listings_clean.csv    # Output de preprocess.py (55 655 lignes, 10 features)
-│                                 # Colonnes ordonnées : room_type, neighbourhood_cleansed,
-│                                 # accommodates, bedrooms, bathrooms, number_of_reviews,
-│                                 # review_scores_rating, availability_365, minimum_nights, price
-├── src/
-│   ├── preprocess.py             # load → clean_price → clean_bathrooms
-│   │                             # → fill_missing → encode_categoricals → FINAL_COLUMNS order
-│   ├── train.py                  # XGBoost 500 arbres + log1p(price) + MLflow logging
-│   └── predict.py                # FEATURE_ORDER fixé · expm1 · modèle @champion
-├── api/
-│   └── main.py                   # FastAPI: GET /health  POST /predict + CORSMiddleware
-├── frontend/                     # Next.js 16 (App Router)
-│   ├── app/
-│   │   ├── layout.tsx            # Root layout, Geist font, dark bg
-│   │   ├── page.tsx              # Page principale (form + result + tooltip)
-│   │   └── globals.css           # Glassmorphism, sliders, selects
-│   ├── .env.local                # NEXT_PUBLIC_API_URL=http://localhost:8000
-│   └── package.json
-├── scripts/
-│   └── set_alias.py              # Assigner manuellement l'alias "champion" sur une version
-├── notebooks/
-│   └── eda.ipynb                 # Full EDA (7 sections, seaborn plots)
-├── tests/
-│   ├── conftest.py               # Shared fixtures (raw_price_df, full_raw_df…)
-│   ├── unit/
-│   │   └── test_preprocess.py    # 16 tests: clean_price, clean_bathrooms,
-│   │                             #           encode_categoricals
-│   ├── integration/
-│   │   └── test_api.py           # 4 tests: /health, /predict, 422, 500
-│   │                             #   VALID_PAYLOAD = tous les 9 champs
-│   └── e2e/
-│       └── test_pipeline.py      # 7 tests: full preprocess() pipeline
-├── .github/
-│   └── workflows/
-│       ├── pr-dev.yml            # PR → dev : tests unit+integration + docker build
-│       ├── dev-staging.yml       # push → staging : full tests + quality gates → alias "candidate"
-│       └── staging-main.yml      # push → main : alias "candidate" → "champion" + e2e
-├── .gitignore
-├── .dvcignore
-├── Dockerfile
-├── requirements.txt
-├── setup.py
-└── CONTEXT.md
-```
+See README.md for the full annotated tree.
+
+Key paths:
+- src/preprocess.py      load -> clean_price -> clean_bathrooms -> fill_missing -> encode -> FINAL_COLUMNS
+- src/train.py           XGBoost 500 trees + log1p(price) + MLflow logging
+- src/predict.py         FEATURE_ORDER enforced, expm1(), @champion model, env var auth
+- api/main.py            FastAPI: GET /health  POST /predict + CORSMiddleware
+- frontend/app/page.tsx  Main page (form + result + tooltip)
+- frontend/next.config.ts Static export config
+- tests/unit/            16 tests
+- tests/integration/     4 tests
+- tests/e2e/             7 tests
+- .github/workflows/     3 CI/CD pipelines
 
 ---
 
-## Ce qui est fait ✅
+## What is Done
 
 ### Data & Preprocessing
-- [x] `data/raw/listings.csv` (86 064 lignes, 79 colonnes) — DVC tracké, remote DagsHub
-- [x] `src/preprocess.py` complet : nettoyage `price` (`$`/`,`), `bathrooms_text`, imputation médiane, label-encoding
-- [x] Ordre des colonnes fixé (`FINAL_COLUMNS`) pour correspondre à `FEATURE_ORDER` dans `predict.py`
+- [x] data/raw/listings.csv (86 064 rows, 79 columns) - DVC tracked, DagsHub remote
+- [x] src/preprocess.py: price cleaning ($,), bathrooms_text parsing, median imputation, label-encoding
+- [x] Column order enforced via FINAL_COLUMNS to match FEATURE_ORDER in predict.py
 
-### Modèle
-- [x] `src/train.py` : XGBoost 500 arbres, log1p(price), cap outliers p99 (€1 700), MLflow logging complet
-- [x] **R²=0.51, MAE=69€** — modèle **v3** avec alias **`champion`** sur DagsHub MLflow Registry
-- [x] MLflow logging : params, MAE, R², price_cap, git_commit, dvc_data_version
+### Model
+- [x] src/train.py: XGBoost 500 trees, log1p(price), p99 outlier cap (EUR 1700), full MLflow logging
+- [x] R2=0.51, MAE=69 EUR - model v3 with alias champion on DagsHub MLflow Registry
+- [x] MLflow logs: params, mae, r2, price_cap, git_commit, dvc_data_version
 
 ### API
-- [x] `api/main.py` : FastAPI avec `GET /health` et `POST /predict`
-  - 9 champs obligatoires : `room_type`, `neighbourhood_cleansed`, `accommodates`, `bedrooms`, `bathrooms`, `number_of_reviews`, `review_scores_rating`, `availability_365`, `minimum_nights`
-  - `CORSMiddleware` configuré (`allow_origins=["*"]` — à restreindre au domaine Vercel en prod)
-- [x] `src/predict.py` : charge `models:/airbnb-price-predictor@champion`, `FEATURE_ORDER` fixé, `np.expm1()` appliqué
+- [x] api/main.py: FastAPI with GET /health and POST /predict
+  - 9 required fields: room_type, neighbourhood_cleansed, accommodates, bedrooms, bathrooms,
+    number_of_reviews, review_scores_rating, availability_365, minimum_nights
+  - CORSMiddleware (allow_origins=["*"] - restrict to frontend domain in production)
+- [x] src/predict.py: loads models:/airbnb-price-predictor@champion, enforces FEATURE_ORDER, applies np.expm1()
+  - Auth via env vars (MLFLOW_TRACKING_USERNAME/PASSWORD from DAGSHUB_USERNAME/TOKEN) - no dagshub.init()
 
 ### Frontend (EstimAir)
-- [x] Next.js 16 + Tailwind + framer-motion dans `frontend/`
+- [x] Next.js 16 + Tailwind + framer-motion in frontend/
 - [x] Dark theme (#0a0a0f), glassmorphism cards, ambient glow
-- [x] Formulaire complet (9 champs) : 2 dropdowns + 5 sliders + 2 inputs
-  - Quartiers affichés par arrondissement (1er → 20e), encodage LabelEncoder envoyé à l'API
-  - Sous-titre "Paris intra-muros · 20 arrondissements"
-- [x] Résultat : prix estimé, comparaison vs moyenne du quartier, barre de confiance ±€69 avec tooltip interactif
-- [x] Bouton "Try another"
+- [x] Full form (9 fields): 2 dropdowns + 5 sliders + 2 number inputs
+  - Neighbourhoods displayed by arrondissement (1er -> 20e), LabelEncoder values sent to API
+  - Subtitle: "Paris city limits - 20 districts"
+- [x] Result: estimated price, vs neighbourhood average, confidence bar +/-EUR 69 with interactive tooltip
+- [x] "Try another" button
+- [x] API URL fallback: https://estimair-backend.onrender.com
+- [x] next.config.ts: static export (output='export', trailingSlash=true, images.unoptimized=true)
 
-### Tests (27 tests, tous passing ✅)
-- [x] 16 tests unitaires (`clean_price`, `clean_bathrooms`, `encode_categoricals`)
-- [x] 4 tests d'intégration (FastAPI avec mocks MLflow/DagsHub) — payload à 9 champs
-- [x] 7 tests e2e (pipeline complet sur mini-CSV temporaire)
+### Tests (27 tests, all passing)
+- [x] 16 unit tests (clean_price, clean_bathrooms, encode_categoricals)
+- [x] 4 integration tests (FastAPI with mocked mlflow.xgboost.load_model + dotenv.load_dotenv)
+- [x] 7 e2e tests (full pipeline on temp mini-CSV)
 
 ### CI/CD (3 pipelines)
-- [x] `pr-dev.yml` : tests unit+integration + coverage + docker build
-- [x] `dev-staging.yml` : full tests + quality gates (R²>0.45, MAE<80€) → alias `candidate`
-- [x] `staging-main.yml` : vérification alias `candidate` → alias `champion` + smoke tests e2e
-- [x] Auth MLflow CI via `MLFLOW_TRACKING_USERNAME/PASSWORD` (pas de `dagshub.init()`)
-- [x] MLflow 3.x : stages dépréciés → **aliases** (`candidate` / `champion`)
+- [x] pr-dev.yml: unit+integration tests + coverage + docker build
+- [x] dev-staging.yml: full tests + quality gates (R2>0.45, MAE<80 EUR) -> alias candidate
+- [x] staging-main.yml: verify alias candidate -> alias champion + e2e smoke tests
+- [x] MLflow CI auth via MLFLOW_TRACKING_USERNAME/PASSWORD (no dagshub.init())
+- [x] MLflow 3.x aliases used throughout: stages are deprecated
 
-### Analyse
-- [x] `notebooks/eda.ipynb` : 7 sections (overview, distribution prix, catégorielles, numériques, corrélations, outliers, conclusions)
-
-### Infrastructure
-- [x] `Dockerfile` : image Python 3.11-slim, expose port 8000
-- [x] `scripts/set_alias.py` : script utilitaire pour assigner un alias manuellement
+### Infrastructure & Documentation
+- [x] Dockerfile: Python 3.11-slim image, exposes port 8000
+- [x] scripts/set_alias.py: manually assign MLflow alias to a model version
+- [x] README.md: complete documentation (architecture, CI/CD, quick start, 12-factor compliance)
+- [x] notebooks/eda.ipynb: 7-section EDA
 
 ---
 
-## Encodage des features (LabelEncoder alphabétique)
+## Feature Encoding (sklearn LabelEncoder - alphabetical order)
 
 ### room_type
 | Code | Label |
@@ -147,111 +112,98 @@ airbnb-price-predictor/
 | 2 | Private room |
 | 3 | Shared room |
 
-### neighbourhood_cleansed (affiché par arrondissement, encodé alphabétiquement)
-| Arrondissement | Label affiché | Code API |
-|---|---|---|
-| 1er | Louvre | 7 |
-| 2e | Bourse | 1 |
-| 3e | Temple | 17 |
-| 4e | Hôtel-de-Ville | 6 |
-| 5e | Panthéon | 13 |
-| 6e | Luxembourg | 8 |
-| 7e | Palais-Bourbon | 12 |
-| 8e | Élysée | 19 |
-| 9e | Opéra | 11 |
-| 10e | Entrepôt | 4 |
-| 11e | Popincourt | 15 |
-| 12e | Reuilly | 16 |
-| 13e | Gobelins | 5 |
-| 14e | Observatoire | 10 |
-| 15e | Vaugirard | 18 |
-| 16e | Passy | 14 |
-| 17e | Batignolles-Monceau | 0 |
-| 18e | Buttes-Montmartre | 3 |
-| 19e | Buttes-Chaumont | 2 |
-| 20e | Ménilmontant | 9 |
+### neighbourhood_cleansed (displayed by arrondissement, encoded alphabetically)
+| Arrondissement | Display label       | API code |
+|----------------|---------------------|----------|
+| 1er            | Louvre              | 7        |
+| 2e             | Bourse              | 1        |
+| 3e             | Temple              | 17       |
+| 4e             | Hotel-de-Ville      | 6        |
+| 5e             | Pantheon            | 13       |
+| 6e             | Luxembourg          | 8        |
+| 7e             | Palais-Bourbon      | 12       |
+| 8e             | Elysee              | 19       |
+| 9e             | Opera               | 11       |
+| 10e            | Entrepot            | 4        |
+| 11e            | Popincourt          | 15       |
+| 12e            | Reuilly             | 16       |
+| 13e            | Gobelins            | 5        |
+| 14e            | Observatoire        | 10       |
+| 15e            | Vaugirard           | 18       |
+| 16e            | Passy               | 14       |
+| 17e            | Batignolles-Monceau | 0        |
+| 18e            | Buttes-Montmartre   | 3        |
+| 19e            | Buttes-Chaumont     | 2        |
+| 20e            | Menilmontant        | 9        |
+
+Note: Python Unicode sort places accented uppercase chars after all ASCII letters,
+so "Elysee" (E-acute) sorts last -> code 19.
 
 ---
 
-## Commandes importantes
+## Key Commands
 
-```bash
-# Installation
-pip install -r requirements.txt && pip install -e .
+    # Install
+    pip install -r requirements.txt && pip install -e .
 
-# Preprocessing
-python src/preprocess.py
+    # Preprocessing
+    python src/preprocess.py
 
-# Entraînement
-python src/train.py
+    # Training
+    python src/train.py
 
-# Assigner l'alias "champion" manuellement (après un train)
-python scripts/set_alias.py 3    # remplacer 3 par le numéro de version
+    # Assign champion alias manually (after training)
+    python scripts/set_alias.py 3    # replace 3 with the actual version number
 
-# API locale
-uvicorn api.main:app --reload
-# → http://localhost:8000/docs
+    # Local API
+    uvicorn api.main:app --reload
+    # -> http://localhost:8000/docs
 
-# Frontend local
-cd frontend && npm run dev
-# → http://localhost:3000
+    # Local frontend
+    cd frontend && npm run dev
+    # -> http://localhost:3000
 
-# Docker
-docker build -t airbnb-price-predictor .
-docker run -p 8000:8000 --env-file .env airbnb-price-predictor
+    # Build frontend (static export -> frontend/out/)
+    cd frontend && npm run build
 
-# Tests
-pytest tests/                          # tous les tests
-pytest tests/unit/                     # unitaires seulement
-pytest tests/ -v --cov=src --cov=api   # avec coverage
+    # Docker
+    docker build -t airbnb-price-predictor .
+    docker run -p 8000:8000 --env-file .env airbnb-price-predictor
 
-# DVC
-dvc pull                               # récupère le dataset depuis DagsHub
-dvc push                               # pousse les données vers DagsHub
-```
+    # Tests
+    pytest tests/                          # all tests
+    pytest tests/unit/                     # unit only
+    pytest tests/ -v --cov=src --cov=api   # with coverage
 
----
-
-## Variables d'environnement
-
-Fichier `.env` (git-ignoré) :
-
-```env
-DAGSHUB_USERNAME=BradleyJason
-DAGSHUB_TOKEN=<token DagsHub>
-MLFLOW_TRACKING_URI=https://dagshub.com/BradleyJason/airbnb-price-predictor.mlflow
-```
-
-Fichier `frontend/.env.local` (git-ignoré) :
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-# En production : URL du backend Render
-```
-
-Secrets GitHub Actions (`Settings → Secrets → Actions`) :
-- `DAGSHUB_USERNAME`
-- `DAGSHUB_TOKEN`
-- `MLFLOW_TRACKING_URI`
+    # DVC
+    dvc pull     # fetch dataset from DagsHub
+    dvc push     # push data to DagsHub
 
 ---
 
-## Ce qui reste à faire 🔜
+## Environment Variables
 
-### Déploiement Backend sur Render (priorité 1)
-- [ ] Créer un service Web Render depuis l'image Docker
-- [ ] Configurer les variables d'environnement (`DAGSHUB_TOKEN`, `MLFLOW_TRACKING_URI`, `DAGSHUB_USERNAME`)
-- [ ] Mettre à jour `NEXT_PUBLIC_API_URL` dans `frontend/.env.local` (et sur Vercel)
-- [ ] Restreindre `allow_origins` dans `api/main.py` au domaine Vercel
+.env at root (git-ignored):
 
-### Déploiement Frontend sur Vercel (priorité 2)
-- [ ] Importer le repo sur Vercel (dossier `frontend/`)
-- [ ] Configurer la variable d'environnement `NEXT_PUBLIC_API_URL` sur Vercel
+    DAGSHUB_USERNAME=BradleyJason
+    DAGSHUB_TOKEN=<dagshub token>
+    MLFLOW_TRACKING_URI=https://dagshub.com/BradleyJason/airbnb-price-predictor.mlflow
 
-### README (priorité 3)
-- [ ] Diagramme d'architecture (MLOps pipeline complet)
-- [ ] Instructions d'installation et de déploiement
-- [ ] Badges CI, coverage, modèle
+frontend/.env.local (git-ignored):
 
-### Nettoyage final
-- [ ] Supprimer le dossier `.claude/` (config temporaire Claude Code)
+    NEXT_PUBLIC_API_URL=http://localhost:8000
+    # In production: https://estimair-backend.onrender.com
+
+GitHub Actions Secrets (Settings -> Secrets -> Actions):
+- DAGSHUB_USERNAME
+- DAGSHUB_TOKEN
+- MLFLOW_TRACKING_URI
+
+---
+
+## Remaining TODO
+
+- [ ] Deploy backend on Render: create Web Service from Docker image, set env vars
+- [ ] Restrict allow_origins in api/main.py to the frontend domain once known
+- [ ] Deploy frontend: serve frontend/out/ as static site (Render static or Vercel)
+- [ ] Set NEXT_PUBLIC_API_URL to point to Render backend

@@ -48,7 +48,7 @@ jobs:
           name: coverage-report
           path: coverage.xml
 
-      - name: Build Docker image (smoke check — no push)
+      - name: Build Docker image (smoke check - no push)
         run: |
           docker build -t airbnb-price-predictor:test .
           echo "Docker build succeeded"

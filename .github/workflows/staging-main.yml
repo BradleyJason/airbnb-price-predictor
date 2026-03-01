@@ -39,7 +39,7 @@ jobs:
           import mlflow
           from mlflow.tracking import MlflowClient
 
-          # Auth via env vars — no interactive OAuth
+          # Auth via env vars - no interactive OAuth
           os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ["DAGSHUB_USERNAME"]
           os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ["DAGSHUB_TOKEN"]
           mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
@@ -61,7 +61,7 @@ jobs:
           print(f"Candidate model found : v{candidate.version} (run {candidate.run_id[:8]})")
           print(f"  R2  : {r2}")
           print(f"  MAE : {mae}")
-          print("Candidate model verified — ready for promotion.")
+          print("Candidate model verified - ready for promotion.")
           EOF
 
       - name: Assign champion alias
@@ -72,7 +72,7 @@ jobs:
           import mlflow
           from mlflow.tracking import MlflowClient
 
-          # Auth via env vars — no interactive OAuth
+          # Auth via env vars - no interactive OAuth
           os.environ["MLFLOW_TRACKING_USERNAME"] = os.environ["DAGSHUB_USERNAME"]
           os.environ["MLFLOW_TRACKING_PASSWORD"] = os.environ["DAGSHUB_TOKEN"]
           mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])

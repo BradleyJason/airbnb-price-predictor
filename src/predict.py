@@ -24,7 +24,7 @@ def predict(features: dict, model_uri: str = "models:/airbnb-price-predictor@cha
     model = load_model(model_uri)
     df = pd.DataFrame([features])[FEATURE_ORDER]
     log_prediction = model.predict(df)
-    # Model was trained on log1p(price) — apply inverse transform
+    # Model was trained on log1p(price) - apply inverse transform
     return float(np.expm1(log_prediction[0]))
 
 

@@ -1,4 +1,4 @@
-"""Unit tests for src/preprocess.py — no MLflow, no DagsHub, no file I/O."""
+"""Unit tests for src/preprocess.py - no MLflow, no DagsHub, no file I/O."""
 import warnings
 import pytest
 import pandas as pd

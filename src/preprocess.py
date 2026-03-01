@@ -49,7 +49,7 @@ def clean_price(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(
             "The 'price' column is empty for all rows. "
             "Download a listings.csv that includes price data "
-            "(e.g. from insideairbnb.com — some recent scrapes omit prices)."
+            "(e.g. from insideairbnb.com - some recent scrapes omit prices)."
         )
     return df
 
